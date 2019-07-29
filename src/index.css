@@ -32,7 +32,7 @@ ol, ul {
     width: 34px;
 }
 
-.square.active {
+.square.active, .square.highlight {
     background: green;
 }
 

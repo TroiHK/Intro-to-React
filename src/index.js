@@ -15,9 +15,13 @@ class Square extends React.Component {
 
 class Board extends React.Component {
     renderSquare(i) {
+        let highlightClass = this.props.winnerPositions.indexOf(i) > -1 ? ' highlight' : '';
+        let activeClass = this.props.selectedItem === i ? ' active' : '';
+        console.log(highlightClass);
         return (
             <Square
-                activeClass={this.props.selectedItem === i ? ' active' : ''}
+                key={i}
+                activeClass={highlightClass + activeClass}
                 value={this.props.squares[i]}
                 onClick={() => this.props.onClick(i)}
             />
@@ -26,23 +30,9 @@ class Board extends React.Component {
 
     render() {
         return (
-            <div>
-                <div className="board-row">
-                    {this.renderSquare(0)}
-                    {this.renderSquare(1)}
-                    {this.renderSquare(2)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(3)}
-                    {this.renderSquare(4)}
-                    {this.renderSquare(5)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(6)}
-                    {this.renderSquare(7)}
-                    {this.renderSquare(8)}
-                </div>
-            </div>
+            <Repeat numTimes="3">
+                {(index) => <Repeat key={index} numTimes="3" classWrap="board-row">{(indexLv2) => this.renderSquare(indexLv2+index*3)}</Repeat>}
+            </Repeat>
         );
     }
 }
@@ -65,8 +55,9 @@ class Game extends React.Component {
         const history = this.state.history.slice(0, this.state.stepNumber + 1);
         const current = history[history.length - 1];
         const squares = current.squares.slice();
+        const { winner } = calculateWinner(squares)
 
-        if (calculateWinner(squares) || squares[i]) {
+        if ( winner || squares[i]) {
             return;
         }
         squares[i] = this.state.xIsNext ? 'X' : 'O';
@@ -91,7 +82,7 @@ class Game extends React.Component {
     render() {
         const history = this.state.history;
         const current = history[this.state.stepNumber];
-        const winner = calculateWinner(current.squares);
+        const { winner, positions } = calculateWinner(current.squares)
 
         const moves = history.map((step, move) => {
             const desc = move ?
@@ -108,7 +99,12 @@ class Game extends React.Component {
         if ( winner ) {
             status = 'Winner: ' + winner;
         } else {
-            status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+            if ( history.length >= 10 ) {
+                status = 'No Winner';
+            } else {
+                status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+            }
+
         }
 
         return (
@@ -116,6 +112,7 @@ class Game extends React.Component {
                 <div className="game-board">
                     <Board
                         selectedItem={current.selectedItem}
+                        winnerPositions={positions}
                         squares={current.squares}
                         onClick={(i) => this.handleClick(i)}
                     />
@@ -137,6 +134,10 @@ function getLocation(l) {
 }
 
 function calculateWinner(squares) {
+    const results = {
+        winner: null,
+        positions: Array(3).fill(null),
+    };
     const lines = [
         [0, 1, 2],
         [3, 4, 5],
@@ -150,10 +151,21 @@ function calculateWinner(squares) {
     for (let i = 0; i < lines.length; i++) {
         const [a, b, c] = lines[i];
         if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-            return squares[a];
+            results.winner = squares[a];
+            results.positions[0] = a;
+            results.positions[1] = b;
+            results.positions[2] = c;
         }
     }
-    return null;
+    return results;
+}
+
+function Repeat(props) {
+    let items = [];
+    for (let i = 0; i < props.numTimes; i++) {
+        items.push(props.children(i));
+    }
+    return <div className={props.classWrap ? props.classWrap : ""}>{items}</div>;
 }
 
 // ========================================
